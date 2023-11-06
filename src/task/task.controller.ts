@@ -21,8 +21,11 @@ export class TaskController {
   // }
 
   @Get('list')
-  tasks(@Query() query: { pn: number; ps: number }) {
-    return this.taskService.tasks(query);
+  async tasks(@Query() query: { pn: number; ps: number }) {
+    return {
+      code: 0,
+      data: await this.taskService.tasks(query)
+    }
   }
 
   @Get('query')
@@ -31,13 +34,13 @@ export class TaskController {
   }
 
   @Post('text2Image')
-  text2Image(@Body() body: InputText2ImagePayload) {
-    return this.taskService.text2Image(body);
+  text2Image(@Body() body: InputText2ImagePayload & { modelId: number }) {
+    return this.taskService.text2Image(body, body.modelId);
   }
 
   @Post('img2Image')
-  img2Image(@Body() body: InputImg2ImgPayload) {
-    return this.taskService.img2Image(body);
+  img2Image(@Body() body: InputImg2ImgPayload & { modelId: number }) {
+    return this.taskService.img2Image(body, body.modelId);
   }
 
   @Post('upload')

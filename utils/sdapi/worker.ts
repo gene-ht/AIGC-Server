@@ -203,6 +203,11 @@ export class FetchWroker {
     return await this.fetch(APIRoutes.vaes)
   }
 
+  async switchCheckpoint(checkpoint: string) {
+    if (this.currentCheckpoint.title === checkpoint) return
+    return this.options({ sd_model_checkpoint: checkpoint })
+  }
+
   async options(payload?: Partial<SDOptions>) {
     const options: SDOptions = await this.fetch(APIRoutes.options)
     if (payload) {
@@ -214,6 +219,7 @@ export class FetchWroker {
         }
         const _options = { ...options, ...payload }
         await this.fetch(APIRoutes.options, JSON.stringify(_options), { method: 'POST' })
+        this.SDConfigurations = _options
         // upgrade success
         this.upgrade(true)
         return _options

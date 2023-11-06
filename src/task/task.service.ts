@@ -20,6 +20,7 @@ export class TaskService {
 
   private async init() {
     this.fetch.productor.on('success', async ({ key, result, value }) => {
+      console.log('-- success', result?.images.length)
       if (!result?.images) return
       
       const { parameters, info } = result
@@ -136,14 +137,16 @@ export class TaskService {
     return task
   }
 
-  async text2Image(inputPayload: InputText2ImagePayload) {
-    const { workerId, checkpoint, taskId, mode, payload } = await this.fetch.text2img(inputPayload)
+  async text2Image(inputPayload: InputText2ImagePayload, modelId: number) {
     const model = await this.prisma.model.findFirst({
       where: {
-        workerId,
-        name: checkpoint.title
+        id: Number(modelId)
       }
     })
+    if (!model) {
+      throw new Error('model not found')
+    }
+    const { taskId, mode, payload } = await this.fetch.text2img(inputPayload, model.name)
     const task = await this.prisma.task.create({
       data: {
         taskId,
@@ -156,7 +159,7 @@ export class TaskService {
     return task
   }
 
-  async img2Image(inputPayload: InputImg2ImgPayload) {
+  async img2Image(inputPayload: InputImg2ImgPayload, modelId: number) {
     const { init_images } = inputPayload
     const _init_images = await Promise.all(
       init_images.map(async image => {
@@ -164,13 +167,18 @@ export class TaskService {
       })
     )
     inputPayload.init_images = _init_images
-    const { workerId, checkpoint, taskId, mode, payload } = await this.fetch.img2img(inputPayload)
+
     const model = await this.prisma.model.findFirst({
       where: {
-        workerId,
-        name: checkpoint.title
+        id: Number(modelId)
       }
     })
+
+    if (!model) {
+      throw new Error('model not found')
+    }
+
+    const { taskId, mode, payload } = await this.fetch.img2img(inputPayload, model.name)
     const task = await this.prisma.task.create({
       data: {
         taskId,

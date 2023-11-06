@@ -43,30 +43,31 @@ export class FetchService {
   //   this.productor = productor
   // }
 
-  async text2img(payload: InputText2ImagePayload) {
-    const { key, value, workerId, checkpoint } = this.productor.create({
+  async text2img(payload: InputText2ImagePayload, checkpoint: string) {
+    const { key, value } = this.productor.create({
       mode: TaskMode.text2img,
-      payload
+      payload,
+      checkpoint
     })
-    console.log('--- fetch text2img ---', key, value, workerId, checkpoint)
     return {
       taskId: key,
-      workerId,
-      checkpoint,
+      // workerId,
+      // checkpoint,
       mode: value.mode,
       payload
     }
   }
 
-  async img2img(payload: InputImg2ImgPayload) {
-    const { key, value, workerId, checkpoint } = this.productor.create({
+  async img2img(payload: InputImg2ImgPayload, checkpoint: string) {
+    const { key, value } = this.productor.create({
       mode: TaskMode.img2img,
-      payload
+      payload,
+      checkpoint
     })
     return {
       taskId: key,
-      workerId,
-      checkpoint,
+      // workerId,
+      // checkpoint,
       mode: value.mode,
       payload
     }

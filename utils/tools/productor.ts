@@ -14,6 +14,7 @@ enum ProductorStatus {
 interface ProductorValue {
   mode: TaskMode,
   payload: InputText2ImagePayload | InputImg2ImgPayload
+  checkpoint: string
 }
 
 type ProductorInfo = {
@@ -62,18 +63,15 @@ export class Productor extends EventEmitter {
   }
 
   create(value: ProductorValue) {
-    console.log('=== productor create ===')
     if (this.status === ProductorStatus.locked) {
       throw new Error('Productor is locked!')
     }
     const key: string = uuidv4()
     this.set(key, value)
-    const { workerId, checkpoint } = this.customer.create(key, value)
+    this.customer.create(key, value)
     return {
       key,
       value,
-      workerId,
-      checkpoint
     }
   }
 

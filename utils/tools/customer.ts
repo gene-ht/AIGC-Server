@@ -15,6 +15,7 @@ enum CustomerStatus {
 interface CustomerValue {
   mode: TaskMode,
   payload: InputText2ImagePayload | InputImg2ImgPayload
+  checkpoint: string
 }
 
 type CustomerInfo = {
@@ -52,7 +53,6 @@ export class Customer extends EventEmitter {
   }
 
   create(key: string, value: CustomerValue) {
-    console.log('--- customer create status ---', this.status)
     if (this.status === CustomerStatus.locked) {
       throw new Error('Customer is locked!')
     }
@@ -60,13 +60,15 @@ export class Customer extends EventEmitter {
     return this.consume(key)
   }
 
-  consume(key: string) {
+  async consume(key: string) {
     const idleWorker = this.workers.find(w => w.status.code === Status.idle)
+    console.log('------- consume', key, idleWorker?.status?.code)
     // if no idle worker, return
     if (!idleWorker) return
-    const workerId = idleWorker.id
-    const checkpoint = idleWorker.currentCheckpoint
-    const { mode, payload } = this.get(key)
+    const { mode, payload, checkpoint } = this.get(key)
+    // switch checkpoint
+    await idleWorker.switchCheckpoint(checkpoint)
+    console.log('------ before consume')
     if (mode === TaskMode.text2img) {
       idleWorker.text2img(payload)
         .then(res => {
@@ -88,10 +90,6 @@ export class Customer extends EventEmitter {
           this.emit('failed', key, err)
           this.remove(key)
         })
-    }
-    return {
-      workerId,
-      checkpoint
     }
   }
 }

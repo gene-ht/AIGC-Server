@@ -30,11 +30,11 @@ export class Customer extends EventEmitter {
     super()
 
     // loop check workers status
-    // setInterval(() => {
-    //   const task = this.store.slice(0, 1)[0]
-    //   if (!task) return
-    //   this.consume(task.key)
-    // }, 1000)
+    setInterval(() => {
+      const task = this.store.slice(0, 1)[0]
+      if (!task) return
+      this.consume(task.key)
+    }, 1000)
   }
 
   private get(key: string) {

@@ -42,7 +42,7 @@ export interface Img2ImgPayload {
   init_images: string[]
   resize_mode: number // 0
   image_cfg_scale: number // 0
-  mask: string
+  // mask: string
   mask_blur_x: number // 4
   mask_blur_y: number // 4
   mask_blur: number // 0

@@ -156,14 +156,19 @@ export class FetchWroker {
       code: Status.pending,
       job: 'scripts_img2img'
     }
-    const res: Img2ImgResponse<string> = await this.fetch(APIRoutes.img2img, JSON.stringify(getImg2ImgPayload(payload)), { method: 'POST' })
-    const { images, parameters, info } = res
-    this.status.code = Status.idle
-    return {
-      checkpoint: this.currentCheckpoint,
-      images,
-      parameters,
-      info: JSON.parse(info || '{}')
+    try {
+      const res: Img2ImgResponse<string> = await this.fetch(APIRoutes.img2img, JSON.stringify(getImg2ImgPayload(payload)), { method: 'POST' })
+      const { images, parameters, info } = res
+      this.status.code = Status.idle
+      return {
+        checkpoint: this.currentCheckpoint,
+        images,
+        parameters,
+        info: JSON.parse(info || '{}')
+      }
+    } catch (err) {
+      this.status.code = Status.idle
+      throw err
     }
   }
 

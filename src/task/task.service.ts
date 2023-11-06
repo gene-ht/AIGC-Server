@@ -20,9 +20,10 @@ export class TaskService {
 
   private async init() {
     this.fetch.productor.on('success', async ({ key, result, value }) => {
+      if (!result?.images) return
       
       const { parameters, info } = result
-      const { images, all_prompts, all_seeds, all_subseeds, extra_generation_params } = info
+      const { all_prompts, all_seeds, all_subseeds, extra_generation_params } = info
       const dests = await this.uploadImages(result.images)
       const generations = all_prompts.map((prompt, index) => {
         return {
@@ -33,7 +34,6 @@ export class TaskService {
           lora: extra_generation_params['Lora hashes'],
         }
       })
-      console.log('--- success ---', key, parameters.prompt, images, 'generations', generations)
       await this.prisma.task.update({
         where: {
           taskId: key

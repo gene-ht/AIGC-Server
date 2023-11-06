@@ -15,10 +15,10 @@ export class TaskController {
     return new StreamableFile(stream)
   }
 
-  @Get('download')
-  download(): string {
-    return this.taskService.download();
-  }
+  // @Get('download')
+  // download() {
+  //   return this.taskService.download();
+  // }
 
   @Get('list')
   tasks() {

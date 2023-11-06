@@ -1,6 +1,6 @@
 import { Img2ImgPayload, ActivedImg2ImgPayload } from '@ctypes/sdapi'
 
-export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2ImgPayload): Img2ImgPayload => {
+export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2ImgPayload): Partial<Img2ImgPayload> => {
   const {
     prompt,
     init_images = [],
@@ -14,6 +14,8 @@ export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2
     width = 512,
     height = 512,
     sampler_index = 'Euler',
+    denoising_strength = 10,
+    initial_noise_multiplier = -1,
   } = payload
   return {
     prompt: prompt,
@@ -36,7 +38,7 @@ export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2
     do_not_save_samples: false, // 是否保存生成的图像样本。
     do_not_save_grid: false, // 是否保存生成的图像网格。
     eta: 0, // η 值。该参数用于控制生成过程中噪声分布的形状。较大的值会产生更平滑的图像，较小的值会产生更噪声化的图像。默认值为 `0`。
-    denoising_strength: 0, // 噪声抑制强度。该参数控制生成图像的噪声水平，较高的值可以减少噪声，但可能会损失图像的细节。默认值为 `0`。
+    denoising_strength, // [0, 1] (0，表示和原图一致)噪声抑制强度。该参数控制生成图像的噪声水平，较高的值可以减少噪声，但可能会损失图像的细节。默认值为 `0`。
     s_min_uncond: 0, // 无条件最小步骤。该参数指定生成过程中的无条件最小步骤数。默认值为 `0`
     s_churn: 0, // 搅动步骤数。该参数指定生成过程中的搅动步骤数。默认值为 `0`。
     s_tmax: 0, // 最大温度步骤数。该参数指定生成过程中的最大温度步骤数。默认值为 `0`。
@@ -59,7 +61,7 @@ export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2
     init_images, // 包含初始化图像的文件路径或标识符的列表，作为模型输入的起点（本地文件路径 or Base64）。
     resize_mode: 0, // 0, 指定图像的调整大小模式。0表示不调整大小，1表示等比例缩放，2表示强制调整为指定的尺寸。
     image_cfg_scale: 0, // 0, 指定图像的缩放比例。0表示原始尺寸，1表示将尺寸缩小一半，以此类推。
-    mask: '', // 指定遮罩图像的文件路径或标识符，用于指定需要进行特殊处理的区域。
+    // mask: '', // 指定遮罩图像的文件路径或标识符，用于指定需要进行特殊处理的区域。
     mask_blur_x: 4, // 4, 控制遮罩模糊的程度。较高的值表示更模糊的遮罩边缘。
     mask_blur_y: 4, // 4
     mask_blur: 0, // 0
@@ -67,7 +69,7 @@ export const getImg2ImgPayload = (payload: Partial<Img2ImgPayload> & ActivedImg2
     inpaint_full_res: true, // true, 指定是否在修复过程中使用完整分辨率的图像。
     inpaint_full_res_padding: 0, // 0, 如果使用完整分辨率的图像进行修复，指定在图像周围添加的填充大小。
     inpainting_mask_invert: 0, // 0, 控制修复过程中遮罩的反转。0表示不反转，1表示反转。
-    initial_noise_multiplier: 0, // 0, 指定在生成图像之前向模型添加的噪声的强度。较高的值可能会增加生成图像的多样性。
+    initial_noise_multiplier, // [-1, 1], 指定在生成图像之前向模型添加的噪声的强度。较高的值可能会增加生成图像的多样性。
     latent_mask: '',
     include_init_images: false, // false
   }

@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 
 import { Customer } from '@utils/tools/customer';
 import { FetchWroker } from '@utils/sdapi/worker';
-import { InputText2ImagePayload, TaskMode } from '@ctypes/sdapi';
+import { InputImg2ImgPayload, InputText2ImagePayload, TaskMode } from '@ctypes/sdapi';
 
 enum ProductorStatus {
   idle = 0,
@@ -13,7 +13,7 @@ enum ProductorStatus {
 
 interface ProductorValue {
   mode: TaskMode,
-  payload: InputText2ImagePayload
+  payload: InputText2ImagePayload | InputImg2ImgPayload
 }
 
 type ProductorInfo = {

@@ -63,7 +63,6 @@ export class FetchService {
       mode: TaskMode.img2img,
       payload
     })
-    console.log('--- fetch img2img ---', key, value, workerId, checkpoint)
     return {
       taskId: key,
       workerId,
@@ -161,12 +160,5 @@ export class FetchService {
 
   async options(payload?: Partial<SDOptions>, workerId?: string) {
     return await this.getWorker(workerId)?.options(payload)
-  }
-
-  async post() {
-    const url = 'https://jsonplaceholder.typicode.com/todos/1';
-    const res = await fetch(url, { method: 'POST' });
-    const json = await res.json();
-    return json;
   }
 }

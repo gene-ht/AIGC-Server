@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { EventEmitter } from 'events';
 import { Productor } from '@utils/tools/productor';
 
-import { InputText2ImagePayload, SDOptions, TaskMode } from '@ctypes/sdapi';
+import { InputImg2ImgPayload, InputText2ImagePayload, SDOptions, TaskMode } from '@ctypes/sdapi';
 import { FetchWroker, Status } from '@utils/sdapi/worker';
 
 enum CustomerStatus {
@@ -14,7 +14,7 @@ enum CustomerStatus {
 
 interface CustomerValue {
   mode: TaskMode,
-  payload: InputText2ImagePayload
+  payload: InputText2ImagePayload | InputImg2ImgPayload
 }
 
 type CustomerInfo = {
@@ -62,7 +62,6 @@ export class Customer extends EventEmitter {
 
   consume(key: string) {
     const idleWorker = this.workers.find(w => w.status.code === Status.idle)
-    console.log('- idleWorker', idleWorker?.id, this.workers.map(w => w.status.code))
     // if no idle worker, return
     if (!idleWorker) return
     const workerId = idleWorker.id
@@ -70,6 +69,17 @@ export class Customer extends EventEmitter {
     const { mode, payload } = this.get(key)
     if (mode === TaskMode.text2img) {
       idleWorker.text2img(payload)
+        .then(res => {
+          this.emit('consumed', key, res)
+          this.remove(key)
+        })
+        .catch(err => {
+          this.emit('failed', key, err)
+          this.remove(key)
+        })
+    }
+    if (mode === TaskMode.img2img) {
+      idleWorker.img2img(payload as InputImg2ImgPayload)
         .then(res => {
           this.emit('consumed', key, res)
           this.remove(key)

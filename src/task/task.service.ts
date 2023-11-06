@@ -189,19 +189,23 @@ export class TaskService {
   }
 
   async tasks(params: {
-    skip?: number;
-    take?: number;
+    pn: number
+    ps: number
     cursor?: Prisma.TaskWhereUniqueInput;
     where?: Prisma.TaskWhereInput;
     orderBy?: Prisma.TaskOrderByWithRelationInput;
   }): Promise<Task[]> {
-    const { skip, take, cursor, where, orderBy } = params;
+    const { pn = 1, ps = 10, cursor, where, orderBy } = params;
+    const skip = Number((pn - 1) * params.ps)
+    const take = Number(ps)
     return this.prisma.task.findMany({
       skip,
       take,
       cursor,
       where,
-      orderBy,
+      orderBy: {
+        id: 'desc'
+      },
     });
   }
 

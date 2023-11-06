@@ -21,8 +21,8 @@ export class TaskController {
   // }
 
   @Get('list')
-  tasks() {
-    return this.taskService.tasks({});
+  tasks(@Query() query: { pn: number; ps: number }) {
+    return this.taskService.tasks(query);
   }
 
   @Get('query')

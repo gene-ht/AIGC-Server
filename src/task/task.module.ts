@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TaskController } from '@/task/task.controller';
 import { TaskService } from '@/task/task.service';
-import { PrismaService } from '@/common/prisma.service'
-import { MediaService } from '@/common/media.service'
-import { FetchService } from '@/common/fetch.service'
+import { MulterModule } from '@nestjs/platform-express';
+import * as path from 'path'
+
+const dest = path.resolve(__dirname, '../../../_uploads')
 
 @Module({
-  imports: [],
+  imports: [MulterModule.register({
+    dest
+  })],
   controllers: [TaskController],
-  providers: [TaskService, PrismaService, FetchService, MediaService],
+  providers: [TaskService],
+  exports: [TaskService]
 })
 export class TaskModule {}

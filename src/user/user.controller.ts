@@ -1,9 +1,10 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { UserService } from './user.service';
+import { PrismaService } from '@/common/prisma.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService){}
 
   @Get()
   getHello(): string {
@@ -13,7 +14,7 @@ export class UserController {
   @Get('login')
   async login() {
     return {
-      token: await this.userService.getToken()
+      token: await this.userService.login()
     };
   }
 

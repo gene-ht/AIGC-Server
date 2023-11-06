@@ -26,6 +26,8 @@ model User {
 model Model {
   id        Int      @id @default(autoincrement())
   name      String
+  workerId  String
+  info      Json    @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tasks      Task[]
@@ -35,15 +37,19 @@ model Model {
 
 model Task {
   id        Int      @id @default(autoincrement())
-  name      String
+  taskId      String  @unique
+  mode      Int     @default(0) // 0: unknown, 1: text2img, 2: img2img
   model     Model    @relation(fields: [modelId], references: [id])
   modelId   Int
-  user     User     @relation(fields: [userId], references: [id])
-  userId   Int
+  user     User?     @relation(fields: [userId], references: [id])
+  userId   Int?      
   status    Int     @default(0) // 0: todo, 1: doing, 2: done, 3: cancel
-  generations Json  @default("[]")
+  generations Json  @default("{}")
+  payload Json  @default("{}")
+  parameters Json @default("{}")
+  taskInfo      Json    @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([id])
+  @@unique([id, taskId])
 }

@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs'
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, rename } from 'fs/promises'
 // import { Readable } from 'stream'
 import { finished } from 'stream/promises'
 import * as path from 'path'
 import fetch from 'node-fetch'
 
-const folder = path.resolve(__dirname, '../../downloads')
+const folder = path.resolve(__dirname, '../../../downloads')
+const uploadFolder = path.resolve(__dirname, '../../../_uploads')
 
 @Injectable()
 export class MediaService {
@@ -16,22 +17,19 @@ export class MediaService {
     return stream
   }
 
-  async base64ToImageFile(base64: string) {
+  async base64ToImageFile(base64: string): Promise<{ dest: string }> {
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '')
     const buffer = Buffer.from(base64Data, 'base64')
-    console.log('- buffer', buffer)
-    const dest = path.resolve(folder, `${Date.now() + Math.ceil(Math.random() * 10000000)}.png`)
-    console.log('- dest', dest)
-    // const file = fs.openSync(dest, 'w')
-    fs.writeFile(dest, buffer, () => {
-      // console.log('--- err', err)
-      // console.log('--- data', data)
-      console.log('----- done', dest)
-    })
-    // await writeFile(dest, buffer, { flag: 'wx' })
-    // fs.closeSync(file)
+    const filename = `${Date.now() + Math.ceil(Math.random() * 10000000)}.png`
+    const dest = path.resolve(folder, filename)
 
-    return dest
+    return new Promise((resolve) => {
+      fs.writeFile(dest, buffer, () => {
+        resolve({
+          dest: filename,
+        })
+      })
+    })
   }
 
   async downloadFile(url: string) {
@@ -44,5 +42,15 @@ export class MediaService {
     await finished(res.body.pipe(fileStream))
 
     return dest
+  }
+
+  async readUploadFile(url: string) {
+    const dest = path.resolve(uploadFolder, '../', url)
+    const base64 = fs.readFileSync(dest).toString('base64')
+    return base64
+  }
+
+  async renameFile(oldPath: string, newPath: string) {
+    return rename(oldPath, newPath)
   }
 }

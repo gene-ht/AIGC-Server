@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma.service';
-import { FetchService } from '@/common/fetch.service';
 import { User, Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService, private readonly fetch: FetchService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   getHello(): string {
     return 'Hello World!';
   }
 
-  getToken() {
-    return this.fetch.getToken()
+  login() {
+    return {
+      user: 'user',
+      pwd: '123'
+    }
   }
 
   async user(

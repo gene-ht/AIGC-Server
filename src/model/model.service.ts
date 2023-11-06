@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma.service';
 import { Model, Prisma } from '@prisma/client';
 import { FetchService } from '@/common/fetch.service'
+import { SDOptions } from '@ctypes/sdapi';
 
 @Injectable()
 export class ModelService {
@@ -11,13 +12,21 @@ export class ModelService {
     return 'Hello World!';
   }
 
+  getOptions() {
+    return this.fetch.options()
+  }
+
+  updateOptions(payload?: Partial<SDOptions>) {
+    return this.fetch.options(payload)
+  }
+
   getLoras() {
     return this.fetch.loras();
   }
 
-  getCNModels() {
-    return this.fetch.controlnet()
-  }
+  // getCNModels() {
+  //   return this.fetch.controlnet()
+  // }
 
   getCheckpoints() {
     return this.fetch.checkpoints()

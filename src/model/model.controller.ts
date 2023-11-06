@@ -1,5 +1,6 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ModelService } from './model.service';
+import { SDOptions } from '@ctypes/sdapi';
 
 @Controller('model')
 export class ModelController {
@@ -10,10 +11,10 @@ export class ModelController {
     return this.modelService.getLoras();
   }
 
-  @Get('cn')
-  getCNModels() {
-    return this.modelService.getCNModels();
-  }
+  // @Get('cn')
+  // getCNModels() {
+  //   return this.modelService.getCNModels();
+  // }
 
   @Get('checkpoints')
   getCheckpoints() {
@@ -33,6 +34,16 @@ export class ModelController {
   @Get('vaes')
   getVaes() {
     return this.modelService.getVaes();
+  }
+
+  @Get('options')
+  getOptions() {
+    return this.modelService.getOptions();
+  }
+
+  @Post('options')
+  updateOptions(@Body() payload: Partial<SDOptions>) {
+    return this.modelService.updateOptions(payload)
   }
 
   @Get('hello')

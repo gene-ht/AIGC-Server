@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Query, Body, Controller, Get, Post } from '@nestjs/common';
 import { ModelService } from './model.service';
 import { SDOptions } from '@ctypes/sdapi';
 
@@ -51,8 +51,19 @@ export class ModelController {
     return this.modelService.getHello();
   }
 
-  @Get()
-  getModel(): string {
-    return this.modelService.getModel();
+  @Get('list')
+  async getModels() {
+    return {
+      code: 0,
+      data: await this.modelService.getModels()
+    }
+  }
+
+  @Get('query')
+  async getModel(@Query() query: { id: number }) {
+    return {
+      code: 0,
+      data: await this.modelService.getModel(query.id)
+    }
   }
 }

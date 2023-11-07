@@ -130,7 +130,7 @@ export class FetchWroker {
   }
 
   // text2img task
-  async text2img(payload: InputText2ImagePayload): Promise<Text2ImageResponse & { checkpoint: SDCheckpoint }> {
+  async text2img(payload: InputText2ImagePayload): Promise<Text2ImageResponse & { checkpoint: SDCheckpoint; progressInfo: any }> {
     this.status.code = Status.pending
     this.status = {
       ...this.status,
@@ -140,16 +140,26 @@ export class FetchWroker {
     const res: Text2ImageResponse<string> = await this.fetch(APIRoutes.text2Image, JSON.stringify(getText2ImagePayload(payload)), { method: 'POST' })
     const { images, parameters, info } = res
     this.status.code = Status.idle
+
+    const _info = JSON.parse(info || '{}')
     return {
       checkpoint: this.currentCheckpoint,
       images,
       parameters,
-      info: JSON.parse(info || '{}')
+      info: _info,
+      progressInfo: {
+        code: Status.done,
+        job: 'scripts_txt2img',
+        progress: 100,
+        currentStep: parameters.steps,
+        totalSteps: parameters.steps,
+        timestamp: _info.job_timestamp,
+      }
     }
   }
 
   // img2img task
-  async img2img(payload: InputImg2ImgPayload): Promise<Img2ImgResponse & { checkpoint: SDCheckpoint }> {
+  async img2img(payload: InputImg2ImgPayload): Promise<Img2ImgResponse & { checkpoint: SDCheckpoint; progressInfo: any }> {
     this.status.code = Status.pending
     this.status = {
       ...this.status,
@@ -160,11 +170,20 @@ export class FetchWroker {
       const res: Img2ImgResponse<string> = await this.fetch(APIRoutes.img2img, JSON.stringify(getImg2ImgPayload(payload)), { method: 'POST' })
       const { images, parameters, info } = res
       this.status.code = Status.idle
+      const _info = JSON.parse(info || '{}')
       return {
         checkpoint: this.currentCheckpoint,
         images,
         parameters,
-        info: JSON.parse(info || '{}')
+        info: _info,
+        progressInfo: {
+          code: Status.done,
+          job: 'scripts_img2img',
+          progress: 100,
+          currentStep: parameters.steps,
+          totalSteps: parameters.steps,
+          timestamp: _info.job_timestamp,
+        }
       }
     } catch (err) {
       this.status.code = Status.idle

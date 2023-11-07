@@ -43,11 +43,13 @@ model Task {
   modelId   Int
   user     User?     @relation(fields: [userId], references: [id])
   userId   Int?      
+  workerId String?
   status    Int     @default(0) // 0: todo, 1: doing, 2: done, 3: cancel
   generations Json  @default("{}")
   payload Json  @default("{}")
   parameters Json @default("{}")
   taskInfo      Json    @default("{}")
+  progressInfo  Json    @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

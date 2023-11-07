@@ -44,8 +44,19 @@ export class ModelService {
     return this.fetch.vaes()
   }
 
-  getModel(): string {
-    return 'Hello World!';
+  getModel(id: number) {
+    return this.prisma.model.findUnique({
+      where: {
+        id: Number(id)
+      }
+    })
+  }
+
+  async getModels() {
+    return {
+      models: await this.prisma.model.findMany(),
+      total: await this.prisma.model.count()
+    }
   }
 
   async model(

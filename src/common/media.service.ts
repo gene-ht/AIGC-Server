@@ -17,6 +17,12 @@ export class MediaService {
     return stream
   }
 
+  readUploadFile(url: string) {
+    const dest = path.resolve(uploadFolder, '../', url)
+    const stream = fs.createReadStream(path.resolve(dest))
+    return stream
+  }
+
   async base64ToImageFile(base64: string): Promise<{ dest: string }> {
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '')
     const buffer = Buffer.from(base64Data, 'base64')
@@ -44,7 +50,7 @@ export class MediaService {
     return dest
   }
 
-  async readUploadFile(url: string) {
+  async readUploadFileBase64(url: string) {
     const dest = path.resolve(uploadFolder, '../', url)
     const base64 = fs.readFileSync(dest).toString('base64')
     return base64

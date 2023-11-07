@@ -28,6 +28,17 @@ export class Productor extends EventEmitter {
   constructor(private readonly customer: Customer) {
     super()
 
+    this.customer.on('consume', (key, workerId, progressInfo) => {
+      console.log('------ consume', key, workerId)
+      const value = this.get(key)
+      if (!value) return
+      this.emit('consume', {
+        key,
+        value,
+        workerId,
+        progressInfo
+      })
+    })
     // customer consumed event
     this.customer.on('consumed', (key, result) => {
       console.log('------ consumed', key)

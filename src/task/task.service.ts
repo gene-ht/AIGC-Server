@@ -19,11 +19,23 @@ export class TaskService {
   }
 
   private async init() {
+    this.fetch.productor.on('consume', async ({ key, workerId, progressInfo }) => {
+      await this.prisma.task.update({
+        where: {
+          taskId: key
+        },
+        data: {
+          status: TaskStatus.working,
+          workerId,
+          progressInfo
+        }
+      });
+    })
+
     this.fetch.productor.on('success', async ({ key, result, value }) => {
-      console.log('-- success', result?.images.length)
       if (!result?.images) return
       
-      const { parameters, info } = result
+      const { parameters, info, progressInfo } = result
       const { all_prompts, all_seeds, all_subseeds, extra_generation_params } = info
       const dests = await this.uploadImages(result.images)
       const generations = all_prompts.map((prompt, index) => {
@@ -45,7 +57,8 @@ export class TaskService {
           taskInfo: info,
           generations: {
             results: generations
-          }
+          },
+          progressInfo
         }
       });
     })
@@ -78,9 +91,7 @@ export class TaskService {
                 id: model.id
               },
               data: {
-                info: {
-                  set: checkpoint as any
-                }
+                info: checkpoint as any
               }
             })
           }
@@ -120,6 +131,8 @@ export class TaskService {
   // }
 
   read(name: string) {
+    console.log('- name', name)
+    if (name.includes('_uploads')) return this.media.readUploadFile(name)
     return this.media.readFile(name)
   }
 
@@ -134,10 +147,25 @@ export class TaskService {
         taskId
       }
     })
+    if (task.status === TaskStatus.working) {
+      const workerId = task.workerId
+      const worker = this.fetch.getWorker(workerId)
+      if (worker.status.code !== Status.pending) return task
+      const status = await worker.verifyStatus()
+      return await this.prisma.task.update({
+        where: {
+          taskId
+        },
+        data: {
+          progressInfo: status
+        }
+      })
+    }
     return task
   }
 
   async text2Image(inputPayload: InputText2ImagePayload, modelId: number) {
+    console.log('--- text2Image', modelId)
     const model = await this.prisma.model.findFirst({
       where: {
         id: Number(modelId)
@@ -152,7 +180,7 @@ export class TaskService {
         taskId,
         mode,
         modelId: model.id,
-        status: TaskStatus.working,
+        status: TaskStatus.wating,
         payload
       }
     })
@@ -163,7 +191,7 @@ export class TaskService {
     const { init_images } = inputPayload
     const _init_images = await Promise.all(
       init_images.map(async image => {
-        return this.media.readUploadFile(image)
+        return this.media.readUploadFileBase64(image)
       })
     )
     inputPayload.init_images = _init_images
@@ -202,19 +230,22 @@ export class TaskService {
     cursor?: Prisma.TaskWhereUniqueInput;
     where?: Prisma.TaskWhereInput;
     orderBy?: Prisma.TaskOrderByWithRelationInput;
-  }): Promise<Task[]> {
+  }): Promise<{ list: Task[], total: number }> {
     const { pn = 1, ps = 10, cursor, where, orderBy } = params;
     const skip = Number((pn - 1) * params.ps)
     const take = Number(ps)
-    return this.prisma.task.findMany({
-      skip,
-      take,
-      cursor,
-      where,
-      orderBy: {
-        id: 'desc'
-      },
-    });
+    return {
+      list: await this.prisma.task.findMany({
+        skip,
+        take,
+        cursor,
+        where,
+        orderBy: {
+          id: 'desc'
+        },
+      }),
+      total: await this.prisma.task.count({ where }),
+    };
   }
 
   renameFile(oldPath: string, newPath: string) {

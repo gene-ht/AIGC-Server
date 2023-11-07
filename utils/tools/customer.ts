@@ -62,13 +62,15 @@ export class Customer extends EventEmitter {
 
   async consume(key: string) {
     const idleWorker = this.workers.find(w => w.status.code === Status.idle)
-    console.log('------- consume', key, idleWorker?.status?.code)
+
     // if no idle worker, return
     if (!idleWorker) return
     const { mode, payload, checkpoint } = this.get(key)
+
     // switch checkpoint
     await idleWorker.switchCheckpoint(checkpoint)
-    console.log('------ before consume')
+
+    // consume task
     if (mode === TaskMode.text2img) {
       idleWorker.text2img(payload)
         .then(res => {
@@ -91,5 +93,9 @@ export class Customer extends EventEmitter {
           this.remove(key)
         })
     }
+
+    setTimeout(async () => {
+      this.emit('consume', key, idleWorker.id, await idleWorker.verifyStatus())
+    }, 100)
   }
 }

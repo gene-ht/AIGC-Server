@@ -29,18 +29,28 @@ export class TaskController {
   }
 
   @Get('query')
-  taskQuery(@Query() query: { taskId: string }) {
-    return this.taskService.taskQuery(query.taskId);
+  async taskQuery(@Query() query: { taskId: string }) {
+    return {
+      code: 0,
+      data: await this.taskService.taskQuery(query.taskId)
+    }
   }
 
   @Post('text2Image')
-  text2Image(@Body() body: InputText2ImagePayload & { modelId: number }) {
-    return this.taskService.text2Image(body, body.modelId);
+  async text2Image(@Body() body: InputText2ImagePayload & { modelId: number }) {
+    console.log('==== body', body)
+    return {
+      code: 0,
+      data: await this.taskService.text2Image(body, body.modelId)
+    }
   }
 
   @Post('img2Image')
-  img2Image(@Body() body: InputImg2ImgPayload & { modelId: number }) {
-    return this.taskService.img2Image(body, body.modelId);
+  async img2Image(@Body() body: InputImg2ImgPayload & { modelId: number }) {
+    return {
+      code: 0,
+      data: await this.taskService.img2Image(body, body.modelId)
+    }
   }
 
   @Post('upload')

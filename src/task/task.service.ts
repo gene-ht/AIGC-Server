@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma.service'
 import { MediaService } from '@/common/media.service'
 import { FetchService } from '@/common/fetch.service'
-import { ManagerService } from '@/common/manager.service'
 import { Task, Prisma } from '@prisma/client';
 
 import { FetchWroker, Status } from '@utils/sdapi/worker';
@@ -164,8 +163,7 @@ export class TaskService {
     return task
   }
 
-  async text2Image(inputPayload: InputText2ImagePayload, modelId: number) {
-    console.log('--- text2Image', modelId)
+  async text2Image(inputPayload: InputText2ImagePayload, modelId: number, userId: number) {
     const model = await this.prisma.model.findFirst({
       where: {
         id: Number(modelId)
@@ -180,6 +178,7 @@ export class TaskService {
         taskId,
         mode,
         modelId: model.id,
+        userId: userId,
         status: TaskStatus.wating,
         payload
       }
@@ -187,7 +186,7 @@ export class TaskService {
     return task
   }
 
-  async img2Image(inputPayload: InputImg2ImgPayload, modelId: number) {
+  async img2Image(inputPayload: InputImg2ImgPayload, modelId: number, userId: number) {
     const { init_images } = inputPayload
     const _init_images = await Promise.all(
       init_images.map(async image => {
@@ -212,6 +211,7 @@ export class TaskService {
         taskId,
         mode,
         modelId: model.id,
+        userId: userId,
         status: TaskStatus.working,
         payload
       }

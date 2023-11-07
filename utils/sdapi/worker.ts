@@ -6,6 +6,7 @@ import { getText2ImagePayload } from './text2img';
 import { getImg2ImgPayload } from './img2img';
 import * as fs from 'fs';
 import * as FormData from 'form-data';
+import { md5Hash } from '@utils/tools/crypto'
 
 enum APIRoutes {
   login = '/login',
@@ -33,11 +34,6 @@ export enum Status {
   failed = 3,
   upgrading = 4,
   loading = 5,
-}
-
-const md5Hash = (name: string) => {
-  const md5 = createHash('md5');
-  return md5.update(name).digest('hex');
 }
 
 const fetchProxyFactory = (host: string, token: string) => {

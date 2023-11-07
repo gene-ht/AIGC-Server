@@ -1,8 +1,10 @@
+import { Req, UseGuards } from '@nestjs/common';
 import { Body, Controller, Get, Header, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TaskService } from '@/task/task.service';
 
 import { InputImg2ImgPayload, InputText2ImagePayload } from '@ctypes/sdapi';
+import { AuthGuard } from '@/auth.guard';
 
 @Controller('task')
 export class TaskController {
@@ -10,6 +12,7 @@ export class TaskController {
 
   @Get('read')
   @Header('Content-Type', 'image/png')
+  @UseGuards(AuthGuard)
   async read(@Query() query: { name: string }, @Res({ passthrough: true }) response: Response ): Promise<StreamableFile> {
     const stream = this.taskService.read(query.name)
     return new StreamableFile(stream)
@@ -21,14 +24,16 @@ export class TaskController {
   // }
 
   @Get('list')
-  async tasks(@Query() query: { pn: number; ps: number }) {
+  @UseGuards(AuthGuard)
+  async tasks(@Req() req: Request & { user: any }, @Query() query: { pn: number; ps: number }) {
     return {
       code: 0,
-      data: await this.taskService.tasks(query)
+      data: await this.taskService.tasks({ ...query, where: { userId: req.user.sub } })
     }
   }
 
   @Get('query')
+  @UseGuards(AuthGuard)
   async taskQuery(@Query() query: { taskId: string }) {
     return {
       code: 0,
@@ -37,23 +42,26 @@ export class TaskController {
   }
 
   @Post('text2Image')
-  async text2Image(@Body() body: InputText2ImagePayload & { modelId: number }) {
+  @UseGuards(AuthGuard)
+  async text2Image(@Req() req: Request & { user: any }, @Body() body: InputText2ImagePayload & { modelId: number }) {
     console.log('==== body', body)
     return {
       code: 0,
-      data: await this.taskService.text2Image(body, body.modelId)
+      data: await this.taskService.text2Image(body, body.modelId, req.user.sub)
     }
   }
 
   @Post('img2Image')
-  async img2Image(@Body() body: InputImg2ImgPayload & { modelId: number }) {
+  @UseGuards(AuthGuard)
+  async img2Image(@Req() req: Request & { user: any }, @Body() body: InputImg2ImgPayload & { modelId: number }) {
     return {
       code: 0,
-      data: await this.taskService.img2Image(body, body.modelId)
+      data: await this.taskService.img2Image(body, body.modelId, req.user.sub)
     }
   }
 
   @Post('upload')
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('image'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     console.log('---- file', file)

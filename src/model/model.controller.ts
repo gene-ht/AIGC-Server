@@ -46,11 +46,6 @@ export class ModelController {
     return this.modelService.updateOptions(payload)
   }
 
-  @Get('hello')
-  getHello(): string {
-    return this.modelService.getHello();
-  }
-
   @Get('list')
   async getModels() {
     return {

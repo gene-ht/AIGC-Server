@@ -5,8 +5,6 @@ import { FetchService } from '@/common/fetch.service'
 import { Task, Prisma } from '@prisma/client';
 
 import { FetchWroker, Status } from '@utils/sdapi/worker';
-import { Customer } from '@utils/tools/customer';
-import { Productor } from '@utils/tools/productor';
 
 import { InputImg2ImgPayload, InputText2ImagePayload } from '@ctypes/sdapi';
 import { TaskStatus } from '@ctypes/prisma';
@@ -18,21 +16,25 @@ export class TaskService {
   }
 
   private async init() {
-    this.fetch.productor.on('consume', async ({ key, workerId, progressInfo }) => {
+    // worker task customer
+    this.fetch.workerPC.on('sub', async ({ key, payload, progressInfo }) => {
       await this.prisma.task.update({
         where: {
           taskId: key
         },
         data: {
           status: TaskStatus.working,
-          workerId,
+          workerId: payload.workerId,
           progressInfo
         }
       });
     })
 
-    this.fetch.productor.on('success', async ({ key, result, value }) => {
-      if (!result?.images) return
+    // db task procudor
+    this.fetch.dbPC.on('pub', async ({ key, value }) => {
+      this.fetch.dbPC.ack(key)
+      const { taskId, result } = value
+      if (!taskId || !result?.images) return
       
       const { parameters, info, progressInfo } = result
       const { all_prompts, all_seeds, all_subseeds, extra_generation_params } = info
@@ -48,7 +50,7 @@ export class TaskService {
       })
       await this.prisma.task.update({
         where: {
-          taskId: key
+          taskId
         },
         data: {
           status: TaskStatus.done,

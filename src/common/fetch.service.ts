@@ -2,10 +2,19 @@ import { InputImg2ImgPayload, InputText2ImagePayload, SDOptions, TaskMode } from
 import { Injectable } from '@nestjs/common';
 
 import { FetchWroker, Status } from '@utils/sdapi/worker';
-import { Customer } from '@utils/tools/customer';
-import { Productor } from '@utils/tools/productor';
+import { ProductorCustomer } from '@utils/tools/productor-customer';
 
-import fetch from 'node-fetch';
+
+interface WorkerValue {
+  mode: TaskMode,
+  payload: InputText2ImagePayload | InputImg2ImgPayload
+  checkpoint: string
+}
+
+interface DBValue {
+  taskId: string
+  result: any
+}
 
 const machines: { host: string; token: string }[] = [
   {
@@ -30,12 +39,30 @@ export interface LoraInfo {
 @Injectable()
 export class FetchService {
   workers: FetchWroker[] = []
-  customer: Customer
-  productor: Productor
+  workerPC: ProductorCustomer<WorkerValue>
+  dbPC: ProductorCustomer<DBValue>
   constructor() {
     this.workers = machines.map(({ host, token }) => new FetchWroker(host, token))
-    this.customer = new Customer(this.workers)
-    this.productor = new Productor(this.customer)
+    this.workerPC = new ProductorCustomer<WorkerValue>()
+    this.dbPC = new ProductorCustomer<DBValue>()
+
+    // worker task procudor
+    this.workerPC.on('pub', async ({ key, value }) => {
+      if (!this.idleWorker) return
+      // free worker, send task to worker; ack worker task
+      this.workerPC.ack(key, { workerId: this.idleWorker.id, progressInfo: await this.idleWorker.verifyStatus() })
+      const { mode, payload, checkpoint } = value
+      await this.idleWorker.switchCheckpoint(checkpoint)
+
+      this.idleWorker[mode === TaskMode.text2img ? 'text2img' : 'img2img'](payload)
+        .then(res => {
+          // worker finished, send result to db procudor
+          this.dbPC.insert({
+            taskId: key,
+            result: res
+          })
+        })
+    })
   }
 
   // load(workers: FetchWroker[], productor: Productor) {
@@ -43,9 +70,14 @@ export class FetchService {
   //   this.productor = productor
   // }
 
+  get idleWorker() {
+    return this.workers.find(w => w.status.code === Status.idle)
+  }
+
   async text2img(payload: InputText2ImagePayload, checkpoint: string) {
-    const { key, value } = this.productor.create({
-      mode: TaskMode.text2img,
+    const mode = TaskMode.text2img
+    const { key } = this.workerPC.insert({
+      mode,
       payload,
       checkpoint
     })
@@ -53,14 +85,15 @@ export class FetchService {
       taskId: key,
       // workerId,
       // checkpoint,
-      mode: value.mode,
+      mode,
       payload
     }
   }
 
   async img2img(payload: InputImg2ImgPayload, checkpoint: string) {
-    const { key, value } = this.productor.create({
-      mode: TaskMode.img2img,
+    const mode = TaskMode.img2img
+    const { key } = this.workerPC.insert({
+      mode,
       payload,
       checkpoint
     })
@@ -68,7 +101,7 @@ export class FetchService {
       taskId: key,
       // workerId,
       // checkpoint,
-      mode: value.mode,
+      mode,
       payload
     }
   }
@@ -77,10 +110,6 @@ export class FetchService {
     // to do: get taskInfo from db
     const workerId = taskId
     return await this.getWorker(workerId)?.verifyStatus()
-  }
-
-  getIdleWorker() {
-    return this.workers.find(w => w.status.code === Status.idle)
   }
 
   getWorker(workerId?: string) {

@@ -1,24 +1,28 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { ProductorCustomer } from '../utils/tools/productor-customer';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication;
+describe('Productor-Customer', () => {
+  let productor: ProductorCustomer<string>
+  let key: string
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    productor = new ProductorCustomer<string>()
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  describe('root', () => {
+    it('pub should be work', () => {
+      productor.on('pub', (task) => {
+        key = task.key
+        expect(task.value).toEqual('test')
+      })
+      productor.insert('test')
+    });
+
+    it('sub should be work', () => {
+      productor.on('sub', (task) => {
+        expect(task.key).toEqual(key)
+      })
+      productor.ack(key)
+      expect(productor.vindicator()).toEqual(false)
+    });
   });
 });

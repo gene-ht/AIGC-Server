@@ -1,4 +1,4 @@
-import { LoraInfo } from '@/common/fetch.service';
+import { LoraInfo } from '@/common/worker.service';
 import fetch from 'node-fetch';
 import { createHash } from 'crypto';
 import { InputText2ImagePayload, Text2ImageResponse, InputImg2ImgPayload, Img2ImgResponse, ProgressInfo, SDCheckpoint, SDOptions } from '@ctypes/sdapi';
@@ -52,7 +52,7 @@ const fetchProxyFactory = (host: string, token: string) => {
   }
 }
 
-export class FetchWroker {
+export class SDMachine {
   private fetch: any
   public id: string
   public status: {
@@ -102,7 +102,6 @@ export class FetchWroker {
     const { job_count, sampling_step } = state
 
     const verifyCode = () => {
-      console.log('=========== verify code', progress, sampling_step, job_count)
       if (!progress && !sampling_step && !job_count) return Status.idle
       if (state.interrupted) return Status.failed
       if (progress === 100) return Status.done

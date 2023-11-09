@@ -1,38 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma.service'
 import { MediaService } from '@/common/media.service'
-import { FetchService } from '@/common/fetch.service'
+import { WorkerService } from '@/common/worker.service'
 import { Task, Prisma } from '@prisma/client';
 
-import { FetchWroker, Status } from '@utils/sdapi/worker';
+import { Status } from '@utils/sdapi/machine';
 
 import { InputImg2ImgPayload, InputText2ImagePayload } from '@ctypes/sdapi';
 import { TaskStatus } from '@ctypes/prisma';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService, private readonly fetch: FetchService,  private readonly media: MediaService) {
+  constructor(private readonly prisma: PrismaService, private readonly worker: WorkerService,  private readonly media: MediaService) {
     this.init()
   }
 
   private async init() {
     // worker task customer
-    this.fetch.workerPC.on('sub', async ({ key, payload, progressInfo }) => {
+    this.worker.prefab.on('sub', async ({ key, payload, progressInfo }) => {
       await this.prisma.task.update({
         where: {
           taskId: key
         },
         data: {
           status: TaskStatus.working,
-          workerId: payload.workerId,
+          machineId: payload.machineId,
           progressInfo
         }
       });
     })
 
     // db task procudor
-    this.fetch.dbPC.on('pub', async ({ key, value }) => {
-      this.fetch.dbPC.ack(key)
+    this.worker.product.on('pub', async ({ key, value }) => {
+      this.worker.product.ack(key)
       const { taskId, result } = value
       if (!taskId || !result?.images) return
       
@@ -68,8 +68,8 @@ export class TaskService {
   }
 
   private async initWorkers() {
-    await Promise.all(this.fetch.workers.map(worker => worker.init()))
-    const workersConfigurations = this.fetch.workers.map(worker => {
+    await Promise.all(this.worker.machines.map(machine => machine.init()))
+    const workersConfigurations = this.worker.machines.map(worker => {
       return {
         id: worker.id,
         checkpoints: worker.SDCheckpoints
@@ -82,7 +82,7 @@ export class TaskService {
         return checkpoints.map(async checkpoint => {
           const model = await this.prisma.model.findFirst({
             where: {
-              workerId: id,
+              machineId: id,
               name: checkpoint.title
             }
           })
@@ -99,7 +99,7 @@ export class TaskService {
 
           return this.prisma.model.create({
             data: {
-              workerId: id,
+              machineId: id,
               name: checkpoint.title,
               info: checkpoint as any
             }
@@ -149,10 +149,10 @@ export class TaskService {
       }
     })
     if (task.status === TaskStatus.working) {
-      const workerId = task.workerId
-      const worker = this.fetch.getWorker(workerId)
-      if (worker.status.code !== Status.pending) return task
-      const status = await worker.verifyStatus()
+      const machineId = task.machineId
+      const machine = this.worker.getMachine(machineId)
+      if (machine.status.code !== Status.pending) return task
+      const status = await machine.verifyStatus()
       return await this.prisma.task.update({
         where: {
           taskId
@@ -174,7 +174,7 @@ export class TaskService {
     if (!model) {
       throw new Error('model not found')
     }
-    const { taskId, mode, payload } = await this.fetch.text2img(inputPayload, model.name)
+    const { taskId, mode, payload } = await this.worker.text2img(inputPayload, model.name)
     const task = await this.prisma.task.create({
       data: {
         taskId,
@@ -207,7 +207,7 @@ export class TaskService {
       throw new Error('model not found')
     }
 
-    const { taskId, mode, payload } = await this.fetch.img2img(inputPayload, model.name)
+    const { taskId, mode, payload } = await this.worker.img2img(inputPayload, model.name)
     const task = await this.prisma.task.create({
       data: {
         taskId,
@@ -221,8 +221,8 @@ export class TaskService {
     return task
   }
 
-  async uploadFile(file: Express.Multer.File, workerId: string) {
-    const worker = this.fetch.getWorker(workerId)
+  async uploadFile(file: Express.Multer.File, machineId: string) {
+    const worker = this.worker.getMachine(machineId)
     worker.uploadFile(file)
   }
 

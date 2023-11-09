@@ -32,27 +32,13 @@ export class ProductorCustomer<T = string> extends EventEmitter {
     }, 1000)
   }
 
-  private get(key: string) {
-    return this.store.find(item => item.key === key)?.value
-  }
-
-  private set(key: string, value: T) {
-    this.store.push({ key, value })
-  }
-
-  private remove(key: string) {
-    const index = this.store.findIndex(item => item.key === key)
-    if (index !== -1) {
-      this.store.splice(index, 1)
-    }
-  }
-
   // insert task in queue
   insert(value: T) {
     if (this.status === ProductorCustomerStatus.locked) {
       throw new Error('ProductorCustomer is locked!')
     }
     const key: string = uuidv4()
+    console.log('-- new taskId', key, Date.now())
     this.set(key, value)
     return {
       key,
@@ -73,5 +59,20 @@ export class ProductorCustomer<T = string> extends EventEmitter {
     if (!task) return false
     this.emit('pub', task)
     return true
+  }
+
+  private get(key: string) {
+    return this.store.find(item => item.key === key)?.value
+  }
+
+  private set(key: string, value: T) {
+    this.store.push({ key, value })
+  }
+
+  private remove(key: string) {
+    const index = this.store.findIndex(item => item.key === key)
+    if (index !== -1) {
+      this.store.splice(index, 1)
+    }
   }
 }

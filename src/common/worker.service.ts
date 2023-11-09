@@ -1,17 +1,17 @@
 import { InputImg2ImgPayload, InputText2ImagePayload, SDOptions, TaskMode } from '@ctypes/sdapi';
 import { Injectable } from '@nestjs/common';
 
-import { FetchWroker, Status } from '@utils/sdapi/worker';
+import { SDMachine, Status } from '@utils/sdapi/machine';
 import { ProductorCustomer } from '@utils/tools/productor-customer';
 
 
-interface WorkerValue {
+interface PrefabValue {
   mode: TaskMode,
   payload: InputText2ImagePayload | InputImg2ImgPayload
   checkpoint: string
 }
 
-interface DBValue {
+interface ProductValue {
   taskId: string
   result: any
 }
@@ -23,13 +23,6 @@ const machines: { host: string; token: string }[] = [
   }
 ]
 
-// const workers = machines.map(({ host, token }) => new FetchWroker(host, token))
-
-// const customer = new Customer(workers)
-
-// const productor = new Productor(customer)
-// console.log('--- productor init')
-
 export interface LoraInfo {
   name: string
   alias: string
@@ -37,27 +30,32 @@ export interface LoraInfo {
 }
 
 @Injectable()
-export class FetchService {
-  workers: FetchWroker[] = []
-  workerPC: ProductorCustomer<WorkerValue>
-  dbPC: ProductorCustomer<DBValue>
+export class WorkerService {
+  machines: SDMachine[] = []
+  prefab: ProductorCustomer<PrefabValue>
+  product: ProductorCustomer<ProductValue>
   constructor() {
-    this.workers = machines.map(({ host, token }) => new FetchWroker(host, token))
-    this.workerPC = new ProductorCustomer<WorkerValue>()
-    this.dbPC = new ProductorCustomer<DBValue>()
+    this.machines = machines.map(({ host, token }) => new SDMachine(host, token))
+    this.prefab = new ProductorCustomer<PrefabValue>()
+    this.product = new ProductorCustomer<ProductValue>()
 
     // worker task procudor
-    this.workerPC.on('pub', async ({ key, value }) => {
-      if (!this.idleWorker) return
+    this.prefab.on('pub', async ({ key, value }) => {
+      console.log('-- worker task pub', key, Date.now())
+      const idleMachine = this.idleMachine
+      if (!idleMachine) return
+      console.log('-- machine', idleMachine.id, Date.now())
       // free worker, send task to worker; ack worker task
-      this.workerPC.ack(key, { workerId: this.idleWorker.id, progressInfo: await this.idleWorker.verifyStatus() })
+      this.prefab.ack(key, { machineId: idleMachine.id, progressInfo: await idleMachine.verifyStatus() })
       const { mode, payload, checkpoint } = value
-      await this.idleWorker.switchCheckpoint(checkpoint)
+      await idleMachine.switchCheckpoint(checkpoint)
 
-      this.idleWorker[mode === TaskMode.text2img ? 'text2img' : 'img2img'](payload)
+      // execute the task
+      idleMachine[mode === TaskMode.text2img ? 'text2img' : 'img2img'](payload)
         .then(res => {
+          console.log('-- worker task done', key, Date.now())
           // worker finished, send result to db procudor
-          this.dbPC.insert({
+          this.product.insert({
             taskId: key,
             result: res
           })
@@ -65,26 +63,24 @@ export class FetchService {
     })
   }
 
-  // load(workers: FetchWroker[], productor: Productor) {
+  // load(workers: SDMachine[], productor: Productor) {
   //   this.workers = workers
   //   this.productor = productor
   // }
 
-  get idleWorker() {
-    return this.workers.find(w => w.status.code === Status.idle)
+  get idleMachine() {
+    return this.machines.find(w => w.status.code === Status.idle)
   }
 
   async text2img(payload: InputText2ImagePayload, checkpoint: string) {
     const mode = TaskMode.text2img
-    const { key } = this.workerPC.insert({
+    const { key } = this.prefab.insert({
       mode,
       payload,
       checkpoint
     })
     return {
       taskId: key,
-      // workerId,
-      // checkpoint,
       mode,
       payload
     }
@@ -92,29 +88,21 @@ export class FetchService {
 
   async img2img(payload: InputImg2ImgPayload, checkpoint: string) {
     const mode = TaskMode.img2img
-    const { key } = this.workerPC.insert({
+    const { key } = this.prefab.insert({
       mode,
       payload,
       checkpoint
     })
     return {
       taskId: key,
-      // workerId,
-      // checkpoint,
       mode,
       payload
     }
   }
 
-  async taskStatus(taskId: string) {
-    // to do: get taskInfo from db
-    const workerId = taskId
-    return await this.getWorker(workerId)?.verifyStatus()
-  }
-
-  getWorker(workerId?: string) {
-    if (!workerId) return this.workers[0]
-    return this.workers.find(w => w.id === workerId)
+  getMachine(machineId?: string) {
+    if (!machineId) return this.machines[0]
+    return this.machines.find(m => m.id === machineId)
   }
 
   // async getToken(): Promise<string> {
@@ -145,8 +133,8 @@ export class FetchService {
 
   async checkpoints() {
     const result = await Promise.all(
-      this.workers.map(async worker => {
-        return worker.checkpoints()
+      this.machines.map(async machine => {
+        return machine.checkpoints()
       })
     )
     return result.flat()
@@ -154,8 +142,8 @@ export class FetchService {
 
   async loras(): Promise<LoraInfo[]> {
     const result = await Promise.all(
-      this.workers.map(async worker => {
-        return worker.loras()
+      this.machines.map(async machine => {
+        return machine.loras()
       })
     )
     return result.flat()
@@ -163,8 +151,8 @@ export class FetchService {
 
   async upscalers() {
     const result = await Promise.all(
-      this.workers.map(async worker => {
-        return worker.upscalers()
+      this.machines.map(async machine => {
+        return machine.upscalers()
       })
     )
     return result.flat()
@@ -172,8 +160,8 @@ export class FetchService {
 
   async samplers() {
     const result = await Promise.all(
-      this.workers.map(async worker => {
-        return worker.samplers()
+      this.machines.map(async machine => {
+        return machine.samplers()
       })
     )
     return result.flat()
@@ -181,14 +169,14 @@ export class FetchService {
 
   async vaes() {
     const result = await Promise.all(
-      this.workers.map(async worker => {
-        return worker.vaes()
+      this.machines.map(async machine => {
+        return machine.vaes()
       })
     )
     return result.flat()
   }
 
-  async options(payload?: Partial<SDOptions>, workerId?: string) {
-    return await this.getWorker(workerId)?.options(payload)
+  async options(payload?: Partial<SDOptions>, machineId?: string) {
+    return await this.getMachine(machineId)?.options(payload)
   }
 }

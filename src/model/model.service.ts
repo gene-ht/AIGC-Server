@@ -1,27 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma.service';
 import { Model, Prisma } from '@prisma/client';
-import { FetchService } from '@/common/fetch.service'
+import { WorkerService } from '@/common/worker.service'
 import { SDOptions } from '@ctypes/sdapi';
 
 @Injectable()
 export class ModelService {
-  constructor(private readonly prisma: PrismaService, private readonly fetch: FetchService) {}
+  constructor(private readonly prisma: PrismaService, private readonly worker: WorkerService) {}
 
   getHello(): string {
     return 'Hello World!';
   }
 
   getOptions() {
-    return this.fetch.options()
+    return this.worker.options()
   }
 
   updateOptions(payload?: Partial<SDOptions>) {
-    return this.fetch.options(payload)
+    return this.worker.options(payload)
   }
 
   getLoras() {
-    return this.fetch.loras();
+    return this.worker.loras();
   }
 
   // getCNModels() {
@@ -29,19 +29,19 @@ export class ModelService {
   // }
 
   getCheckpoints() {
-    return this.fetch.checkpoints()
+    return this.worker.checkpoints()
   }
 
   getSamplers() {
-    return this.fetch.samplers()
+    return this.worker.samplers()
   }
 
   getUpscalers() {
-    return this.fetch.upscalers()
+    return this.worker.upscalers()
   }
 
   getVaes() {
-    return this.fetch.vaes()
+    return this.worker.vaes()
   }
 
   getModel(id: number) {

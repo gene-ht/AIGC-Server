@@ -44,7 +44,6 @@ export class TaskController {
   @Post('text2Image')
   @UseGuards(AuthGuard)
   async text2Image(@Req() req: Request & { user: any }, @Body() body: InputText2ImagePayload & { modelId: number }) {
-    console.log('==== body', body)
     return {
       code: 0,
       data: await this.taskService.text2Image(body, body.modelId, req.user.sub)

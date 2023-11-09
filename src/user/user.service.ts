@@ -68,7 +68,6 @@ export class UserService {
       data: {
         name,
         password: md5Hash(pwd),
-        email: ''
       }
     })
 
@@ -86,7 +85,7 @@ export class UserService {
       }
     })
 
-    if (md5Hash(pwd) !== user.password) {
+    if (md5Hash(pwd) !== user?.password) {
       throw new UnauthorizedException()
     }
 
